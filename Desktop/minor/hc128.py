@@ -49,10 +49,6 @@ def init(K,IV):
 	Q = Q + W[(i+768)*4:(i+768)*4+4]    
 
     for i in range(0,512):
-	P = P + g1()
-P[i] = (P[i] + g1(P[i ¯ 3], P[i ¯ 10], P[i ¯ 511])) ⊕ h1( P[i ¯ 12] );
-for i = 0 to 511, do
-Q[i] = (Q[i] + g2(Q[i ¯ 3], Q[i ¯ 10], Q[i ¯ 511])) ⊕ h2( Q[i ¯ 12] );
 
         
 
