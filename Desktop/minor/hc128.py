@@ -2,11 +2,12 @@ import base64
 from pbkd import PBKD
 from byte import Byte
 
-def hex_to_bit(x):
-   return 
+def hex_to_bin(x):
+   x_size = len(x) * 4
+   return ( bin(int(x, 16))[2:] ).zfill(x_size)
 
-def bit_to_hex(h):
-   return
+def bin_to_hex(x):
+   return hex(int(x, 2))
 
 def mod(x):
    return x % 512
@@ -18,10 +19,14 @@ def update_substr(s,i,r):
    return s[:,i] + r + s[i*4+4,:]
 
 def rotl(x,n):
-   return ((x << n)^(x >> (32 − n))
+   h = hex_to_bin(x)
+   h = ((h << n)^(h >> (32 − n))
+   return bin_to_hex(h)
 
 def rotr(x,n):
-   return ((x >> n)^(x << (32−n))
+   h = hex_to_bin(x)
+   h = ((h >> n)^(h << (32−n))
+   return bin_to_hex(h)
 
 def f1(x):
    return rotr(x,7)^rotr(x,18)^(x >> 3)
@@ -36,10 +41,10 @@ def g2(x, y, z):
    return (rotl(x,10)^rotl(z,23)) + rotl(y,8)
 
 def h1(x):
-   return Q[x0] + Q[256 + x2]
+   return substr(Q,x[3]) + substr(Q,256+x[1])
 
 def h2(x):
-   return P[x0] + P[256 + x2]
+   return substr(P,x[3]) + substr(P,256 + x[1])
 
 def init(K,IV):
     for i in range(0,4):
