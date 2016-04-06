@@ -70,7 +70,15 @@ def init(K,IV):
 	r = (substr(Q,i) + g2(substr(Q,mod(i-3)),substr(Q,mod(i-10)),substr(Q,mod(i-511))) ^ h2(substr(Q,mod(i-12)))
 	Q = update_substr(Q,i,r)
 
-	
-
-        
-
+def keystream_gen_algo():
+    var = 1
+    i = 0
+    while var == 1 :
+	j = i % 512
+	if (i % 1024) < 512:
+	   substr(P,j) = substr(P,j) + g1(substr(P,j-3),substr(P,j-10),substr(P,j-511));
+	   s = s + h1(substr(P,j-12)) ^ substr(P,j)
+	else:
+	   substr(Q,j) = substr(Q,j) + g2(substr(Q,j-3),substr(Q,j-10),substr(Q,j-511));
+	   s = s + h2(substr(Q,j-12)) ^ substr(Q,j)
+	i = i + 1;
