@@ -8,6 +8,15 @@ def hex_to_bit(x):
 def bit_to_hex(h):
    return
 
+def mod(x):
+   return x % 512
+
+def substr(s,i):
+   return s[i*4:i*4+4]
+
+def update_substr(s,i,r):
+   return s[:,i] + r + s[i*4+4,:]
+
 def rotl(x,n):
    return ((x << n)^(x >> (32 − n))
 
@@ -34,21 +43,29 @@ def h2(x):
 
 def init(K,IV):
     for i in range(0,4):
-	temp1 = K[i*4:i*4+4]
-	temp2 = IV[i*4:i*4+4]	
+	temp1 = substr(K,i)
+	temp2 = substr(IV,i)	
 	K = K+temp1
 	IV = IV+temp2
     for i in range(0,8):
-	W = W + K[i*4:i*4+4]
+	W = W + substr(K,i)
     for i in range(8,16):
-	W = W + IV[(i-8)*4:(i-8)*4+4]	
+	W = W + substr(IV,i-8)
     for i in range(16,1280):
-        W = W + f2(W[(i-2)*4:(i-2)*4+4]) + W[(i-7)*4:(i-7)*4+4] + f1(W[(i-15)*4:(i-15)*4+4]) + W[(i-16)*4:(i-16)*4+4] + i 
+        W = W + f2(substr(W,i-2)) + substr(W,i-7) + f1(substr(W,i-15)) + substr(W,i-16) + i 
     for i in range(0,512):
-	P = P + W[(i+256)*4:(i+256)*4+4]
-	Q = Q + W[(i+768)*4:(i+768)*4+4]    
+	P = P + substr(W,i+256)
+	Q = Q + substr(W,i+768)   
 
     for i in range(0,512):
+	r = (substr(P,i) + g1(substr(P,mod(i-3)),substr(P,mod(i-10)),substr(P,mod(i-511))) ^ h1(substr(P,mod(i-12)))
+	P = update_substr(P,i,r)
+
+    for i in range(0,512):
+	r = (substr(Q,i) + g2(substr(Q,mod(i-3)),substr(Q,mod(i-10)),substr(Q,mod(i-511))) ^ h2(substr(Q,mod(i-12)))
+	Q = update_substr(Q,i,r)
+
+	
 
         
 
