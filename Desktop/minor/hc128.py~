@@ -82,9 +82,3 @@ def keystream_gen_algo():
 	   substr(Q,j) = substr(Q,j) + g2(substr(Q,j-3),substr(Q,j-10),substr(Q,j-511));
 	   s = s + h2(substr(Q,j-12)) ^ substr(Q,j)
 	i = i + 1;
-
-def encrypt(txt):
-	cipher_text = s ^ txt
-
-def decrypt(cipher_text):
-	txt = s ^ cipher_text
