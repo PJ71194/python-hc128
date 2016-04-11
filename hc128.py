@@ -1,90 +1,125 @@
-import base64
-from pbkd import PBKD
-from byte import Byte
 
-def hex_to_bin(x):
-   x_size = len(x) * 4
-   return ( bin(int(x, 16))[2:] ).zfill(x_size)
+P = [None] * 512
+Q = [None] * 512
+i = 0
 
-def bin_to_hex(x):
-   return hex(int(x, 2))
+def hex_to_bytes(str):
+  """Converts a hex string to a byte string"""
+  
+  return str.zfill(8).decode("hex")
 
-def mod(x):
-   return x % 512
+def bytes_to_hex(bytes):
+  """Converts a byte string to a hex string"""
 
-def substr(s,i):
-   return s[i*4:i*4+4]
+  return bytes.encode("hex")
 
-def update_substr(s,i,r):
-   return s[:,i] + r + s[i*4+4,:]
+def hex_to_int(str):
+  """Converts hex string to int"""
+
+  return int(str, 16)
+
+def int_to_hex(n):
+  """Converts an integer to hex string"""
+
+  return "%x" % n
+
+def get_byte(x, n):
+  """Get the n'th byte of integer x
+  n = 0 : Least significant byte
+  """
+  
+  for i in range(0, n):
+    x = x / 256
+  return x % 256
+
+def get_4byte(x, n):
+  """Get the n'th 4byte of integer x
+  n = 0 : Least significant 4byte
+  """
+  
+  for i in range(0, n):
+    x = x / 4294967296
+  return x % 4294967296
+
+def int32(n):
+  """Return the 32 least significant bits of the number n"""
+
+  return n % 4294967296
+
+def mod512(n):
+  return n % 512
 
 def rotl(x,n):
-   h = hex_to_bin(x)
-   h = ((h << n)^(h >> (32 − n))
-   return bin_to_hex(h)
-
-def rotr(x,n):
-   h = hex_to_bin(x)
-   h = ((h >> n)^(h << (32−n))
-   return bin_to_hex(h)
+  x = int32(x << n) ^ int32(x >> (32 - n))
+  return x
 
 def f1(x):
-   return rotr(x,7)^rotr(x,18)^(x >> 3)
+  return rotl(x, 25) ^ rotl(x, 14) ^ (x >> 3)
 
 def f2(x):
-   return rotr(x,17)^rotr(x,19)^(x >> 10)
+  return rotl(x, 15) ^ rotl(x, 13) ^ (x >> 10)
 
 def g1(x, y, z):
-   return (rotr(x,10)^rotr(z,23)) + rotr(y,8)
+  return int32((rotl(x, 22) ^ rotl(z, 9)) + rotl(y, 24))
 
 def g2(x, y, z):
-   return (rotl(x,10)^rotl(z,23)) + rotl(y,8)
+  return int32((rotl(x, 10) ^ rotl(z, 23)) + rotl(y, 8))
 
 def h1(x):
-   return substr(Q,x[3]) + substr(Q,256+x[1])
+  return int32(Q[get_byte(x, 0)] + Q[256 + get_byte(x, 2)])
 
 def h2(x):
-   return substr(P,x[3]) + substr(P,256 + x[1])
+  return int32(P[get_byte(x, 0)] + P[256 + get_byte(x, 2)])
 
-def init(K,IV):
-    for i in range(0,4):
-	temp1 = substr(K,i)
-	temp2 = substr(IV,i)	
-	K = K+temp1
-	IV = IV+temp2
-    for i in range(0,8):
-	W = W + substr(K,i)
-    for i in range(8,16):
-	W = W + substr(IV,i-8)
-    for i in range(16,1280):
-        W = W + f2(substr(W,i-2)) + substr(W,i-7) + f1(substr(W,i-15)) + substr(W,i-16) + i 
-    for i in range(0,512):
-	P = P + substr(W,i+256)
-	Q = Q + substr(W,i+768)   
+def init(K, IV):
+  """Initializing the key and IV into P and Q"""
 
-    for i in range(0,512):
-	r = (substr(P,i) + g1(substr(P,mod(i-3)),substr(P,mod(i-10)),substr(P,mod(i-511))) ^ h1(substr(P,mod(i-12)))
-	P = update_substr(P,i,r)
+  global P
+  global Q
 
-    for i in range(0,512):
-	r = (substr(Q,i) + g2(substr(Q,mod(i-3)),substr(Q,mod(i-10)),substr(Q,mod(i-511))) ^ h2(substr(Q,mod(i-12)))
-	Q = update_substr(Q,i,r)
+  # Converting hex key string to int
+  K = hex_to_int(bytes_to_hex(hex_to_bytes(K)[::-1]))
+  IV = hex_to_int(bytes_to_hex(hex_to_bytes(IV)[::-1]))
 
-def keystream_gen_algo():
-    var = 1
-    i = 0
-    while var == 1 :
-	j = i % 512
-	if (i % 1024) < 512:
-	   substr(P,j) = substr(P,j) + g1(substr(P,j-3),substr(P,j-10),substr(P,j-511));
-	   s = s + h1(substr(P,j-12)) ^ substr(P,j)
-	else:
-	   substr(Q,j) = substr(Q,j) + g2(substr(Q,j-3),substr(Q,j-10),substr(Q,j-511));
-	   s = s + h2(substr(Q,j-12)) ^ substr(Q,j)
-	i = i + 1;
+  # Initializing W
+  W = [None] * 1280
 
-def encrypt(txt):
-	cipher_text = s ^ txt
+  for i in range(0,8):
+    W[i] = get_4byte(K, i % 4)
 
-def decrypt(cipher_text):
-	txt = s ^ cipher_text
+  for i in range(8,16):
+    W[i] = get_4byte(IV, i % 4)
+
+  for i in range(16,1280):
+    W[i] = int32(f2(W[i-2]) + W[i-7] + f1(W[i-15]) + W[i-16] + i)
+
+  # Initializing P and Q
+  for i in range(0,512):
+    P[i] = W[i+256]
+    Q[i] = W[i+768]   
+
+  # Running the cipher 1024 times and replacing table elements
+  for i in range(0,512):
+    P[i] = int32(P[i] + g1(P[mod512(i-3)], P[mod512(i-10)], P[mod512(i-511)]) ^ h1(P[mod512(i-12)]))
+  for i in range(0,512):
+    Q[i] = int32(Q[i] + g2(Q[mod512(i-3)], Q[mod512(i-10)], Q[mod512(i-511)]) ^ h2(Q[mod512(i-12)]))
+
+def keygen():
+  """Generates and returns a 32 bit key"""
+  
+  global P
+  global Q
+  global i
+
+  j = mod512(i)
+  key = None
+  
+  if (i % 1024) < 512:
+    P[j] = int32(P[j] + g1(P[mod512(j-3)], P[mod512(j-10)], P[mod512(j-511)]))
+    key = h1(P[mod512(j-12)]) ^ P[j]
+  else:
+    Q[j] = int32(Q[j] + g2(Q[mod512(j-3)], Q[mod512(j-10)], Q[mod512(j-511)]))
+    key = h2(Q[mod512(j-12)]) ^ Q[j]
+  
+  i = i + 1
+  return bytes_to_hex(hex_to_bytes(int_to_hex(key))[::-1])
